@@ -4,7 +4,7 @@ import aiohttp
 import bs4
 from tqdm import tqdm, trange
 
-from src.example import Website
+import website
 
 
 async def fetch(session, url):
@@ -12,7 +12,7 @@ async def fetch(session, url):
         return await response.read()
 
 
-class jindex(Website):
+class jindex(website.Website):
 
     async def get_max_page(self):
         async with aiohttp.ClientSession() as session:

@@ -18,6 +18,9 @@ class Job:
         return hash(('description', self.description))
 
     def as_dict(self):
-        return {'title': self.title, 'company': self.company,
-                'location': self.location, 'publishdate': self.publishdate,
-                'description': self.description, 'joblink': self.joblink}
+        return {'title': self.title, 
+                'description': self.description, 
+                'company': self.company, 
+                'location': self.location,
+                'publishdate': self.publishdate, 
+                'joblink': self.joblink}

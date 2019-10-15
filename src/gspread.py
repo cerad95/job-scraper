@@ -19,10 +19,8 @@ class spreadsheet:
         self.worksheet = self.spreadsheet.worksheet_by_title(now)
 
     def insert_csv_file(self):
-        with open('C:/users/alex/desktop/info.csv', encoding='utf-8', mode='r') as f:
-            reader = csv.reader(f, skipinitialspace=True, delimiter='|', quotechar="'")
+        with open('data.csv', encoding='utf-8', mode='r') as f:
+            reader = csv.reader(f, skipinitialspace=True,
+                                delimiter='|', quotechar="'")
             data = list(reader)
             self.worksheet.update_values('A1', data)
-
-
-
