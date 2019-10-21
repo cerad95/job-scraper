@@ -13,6 +13,9 @@ from tqdm import tqdm
 from datetime import datetime
 from sys import platform as _platform
 
+from graduateland import graduateland
+
+
 async def fetch(session, url):
     async with session.get(url) as response:
         return await response.read()
@@ -20,90 +23,19 @@ async def fetch(session, url):
 
 class job_searcher:
     def __init__(self):
-        self.website = jindex("Jobindex", "https://www.jobindex.dk/jobsoegning?geoareaid=15182&geoareaid=15187&geoareaid=4&geoareaid=3&geoareaid=2&geoareaid=15180&geoareaid=16149&subid=1&subid=2&subid=3&subid=4&subid=6&subid=7&subid=93&subid=116&subid=127")
-        self.jobs = []
-        self.html_pages = []
-        self.printstring = "{desc:<20}{percentage:3.0f}%%|%s{bar}%s{r_bar}" % (
-            Fore.LIGHTBLUE_EX, Fore.RESET)
+        self.websites = []
+        self.websites.append(graduateland("Graduateland", "https://graduateland.com/da/jobs?types%5B%5D=1&types%5B%5D=3&positions%5B%5D=15&languages%5B%5D=1&languages%5B%5D=23&limit=10"))
+        self.websites.append(jindex("Jobindex", "https://www.jobindex.dk/jobsoegning?geoareaid=15182&geoareaid=15187&geoareaid=4&geoareaid=3&geoareaid=2&geoareaid=15180&geoareaid=16149&subid=1&subid=2&subid=3&subid=4&subid=6&subid=7&subid=93&subid=116&subid=127"))
 
-    async def fetch_all_urls(self, weburls):
-        tasks = []
-
-        async with aiohttp.ClientSession() as session:
-            for url in weburls:
-                tasks.append(asyncio.tasks.create_task((fetch(session, url))))
-
-            self.html_pages = [await f for f in
-                               tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Fetching:", bar_format=self.printstring)]
-
-    def scrape_all_pages(self):
-        for job_page in tqdm(self.html_pages, desc="Scraping:", bar_format=self.printstring):
-            strainer = bs4.SoupStrainer("div", {'class': ['PaidJob']})
-            soup = bs4.BeautifulSoup(job_page.decode(
-                'utf-8'), 'lxml', parse_only=strainer)
-            self.scrape_page(soup)
-
-    def scrape_page(self, job_page):
-        paidjobs = job_page.find_all("div", {'class': ['PaidJob']})
-
-        for paidjob in paidjobs:
-            title_div = paidjob.find("b")
-            title = str(title_div.contents[0])
-            publishdate = datetime.strptime(
-                str(paidjob.find("li", {'class': ['toolbar-pubdate']}).contents[1].attrs['datetime']), '%Y-%m-%d')
-            joblink = str(paidjob.find(
-                "b").parent.attrs['href']).replace("'", "")
-            paidjob.find(
-                "div", {'class': ['jix_toolbar', 'jix_appetizer_toolbar']}).decompose()
-            paragraphs = paidjob.find_all(["p", 'li'], recursive=True)
-
-            for paragraph in paragraphs:
-                if str(paragraph) == "<p></p>" or "<p>\n<a":
-                    del paragraph
-
-            if len(paragraphs[0].contents) != 0:
-                company = paragraphs[0].contents[1].contents[0].contents[0]
-            else:
-                company = paragraphs[1].contents[1].contents[0].contents[0]
-
-            company = str(company).replace("|", "/")
-
-            description = []
-            for paragraph in paragraphs:
-                for content in paragraph.contents:
-                    if type(content) == bs4.NavigableString:
-                        description.append(str(content))
-                    elif type(content) == bs4.Tag and len(content.contents) > 0:
-                        description.append(str(content.contents[0]))
-
-            del (description[0:3])
-
-            descriptionstring = ""
-            for paragraph in description:
-                if paragraph == " ":
-                    del paragraph
-                else:
-                    descriptionstring += paragraph.replace(
-                        "<b>", "").replace("</b>", "")
-
-            if len(job_page.find("p").contents) > 2:
-                location = str(job_page.find("p").contents[2]).split(' ')[-1]
-            else:
-                location = "Couldn't find location"
-
-            newjob = Job(title=title, location=location, company=company, joblink=joblink,
-                         description=descriptionstring, publishdate=publishdate)
-
-            steder = ["Copenhagen", "Glostrup", "København", "Aars", "Aalborg", "Støvring", "Hobro", "Aarhus",
-                      "Randers", "Couldn't find location", "Region Hovedstaden"]
-            areas = ["python", "python3", "C#", "dotnet", "dotnet core", ".net", "asp.net", "mysql",
-                     "sql", "devops", "jenkins", "git", "gitlab", "R", "big data", "linux", "windows"]
-            if re.compile('|'.join(steder), re.IGNORECASE).search(location):
-                if re.compile('|'.join(areas), re.IGNORECASE).search(descriptionstring):
-                    self.jobs.append(newjob)
+        self.printstring = "{desc:<20}{percentage:3.0f}%%|%s{bar}%s{r_bar}" % (Fore.LIGHTBLUE_EX, Fore.RESET)
 
     def write_to_csv(self):
-        df = pandas.DataFrame.from_records([s.as_dict() for s in self.jobs])
+
+        df = 0
+
+        for site in self.websites:
+            df = pandas.DataFrame.from_records([s.as_dict() for s in site.jobs])
+
         df.reset_index(drop=True, inplace=True)
 
         if _platform == "linux" or _platform == "linux2":
@@ -118,18 +50,20 @@ class job_searcher:
                       header=True, sep='|', index=False)
 
     def jobs_unique_and_sorted(self):
-        # self.jobs = list(set(self.jobs))
-        self.jobs.sort(key=lambda x: x.company, reverse=False)
+        for website in self.websites:
+            website.jobs = list(set(website.jobs))
+            website.jobs.sort(key=lambda x: (x.location, x.title), reverse=False)
 
 
 if __name__ == '__main__':
     js = job_searcher()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(js.fetch_all_urls(
-        js.website.generate_urls_for_pages()))
 
-    js.scrape_all_pages()
+    for website in js.websites:
+        urls = website.generate_urls_for_pages()
+        loop.run_until_complete(website.fetch_all_urls(urls))
+        website.scrape_all_pages()
 
     while True:
         decision = input("\nStore local or cloud: ")

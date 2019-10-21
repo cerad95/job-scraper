@@ -20,7 +20,6 @@ class spreadsheet:
 
     def insert_csv_file(self):
         with open('data.csv', encoding='utf-8', mode='r') as f:
-            reader = csv.reader(f, skipinitialspace=True,
-                                delimiter='|', quotechar="'")
+            reader = csv.reader(f, skipinitialspace=True, delimiter='|', quotechar="'")
             data = list(reader)
             self.worksheet.update_values('A1', data)
