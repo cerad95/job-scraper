@@ -10,7 +10,6 @@ from tqdm import tqdm
 from job import Job
 from website import Website
 
-
 async def fetch(session, url):
     async with session.get(url) as response:
         return await response.read()
@@ -69,38 +68,38 @@ class graduateland(Website):
             soup = bs4.BeautifulSoup(job_page.decode('utf-8'), 'lxml', parse_only=strainer)
             self.scrape_page(soup)
 
-        print(len(self.jobs))
-
     def scrape_page(self, job_page):
-        paidjobs = job_page.find_all("div", {'class': ['job-box__text']})
-
-        i = 0
+        paidjobs = job_page.find_all("div", {'class': ['bem-enabled']})
 
         for paidjob in paidjobs:
-            i += 1
-            title = paidjob.find("h1", {'class': ["job-box__heading"]}).text
+            title = paidjob.find("h1", {'class': ["job-box__heading"]}).text.strip().replace("\n","").replace("|"," ")
+            joblink = paidjob.find("a", href=True).attrs['href']
+            joblink = "https://graduateland.com" + joblink
+            
+            company = paidjob.find("span", {'class': ['job-box__company-name']})
+            if company:
+                company = company.text.strip()
+
+            location = paidjob.find("div", {'class': ['job-box__meta-info']}).contents[5].text.strip()
+            
             publishdate = paidjob.find("span", {'class': ['text-light-gray', 'text-warning']})
-            joblink = paidjob.find('a')
+            if not publishdate:
+                publishdate = "N/A"
+            else:
+                publishdate = publishdate.text.strip()
+
+            
             descriptionstring = paidjob.find("div", {'class': ['job-box__text']})
 
-            if descriptionstring is not None:
-                descriptionstring = descriptionstring.text
+            if descriptionstring.contents[-1] is not None:
+                descriptionstring = str(descriptionstring.contents[-1]).strip().replace("|", "")
             else:
-                descriptionstring = "No Description :("
+                descriptionstring = "N/A"
 
-            company = paidjob.find("span", {'class': ['job-box__company-name']}).text
-            location = paidjob.find("div", {'class': ['job-box__meta-info']}).contents[5].text
 
             newjob = Job(title=title, location=location, company=company, joblink=joblink, description=descriptionstring, publishdate=publishdate, urlname="Graduateland")
-
-            steder = ["Copenhagen", "Glostrup", "København", "Aalborg",
-                      "Couldn't find location", "Region Hovedstaden", "Aalborg eller København"]
-            areas = ["python", "python3", "C#", "dotnet", "dotnet core", ".net", "asp.net", "mysql",
-                     "sql", "devops", "jenkins", "git", "gitlab", "linux", "windows", "html", "css", 
-                     "dapper", "entity", "django", "nodejs", "docker", "rest", "tensorflow", "tkinker", 
-                     "vmware", "tfs", "uml", "systemudvikling", "microservices", "integration", "test", 
-                     "functional test", "funktionelle test", "tests"]
-            #if re.compile('|'.join(steder), re.IGNORECASE).search(location) and re.compile('|'.join(areas), re.IGNORECASE).search(descriptionstring):
-            self.jobs.append(newjob)
-        print(i)
+            
+            if re.compile('|'.join(self.steder), re.IGNORECASE).search(location):
+                self.jobs.append(newjob)
+        
 

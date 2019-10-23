@@ -17,6 +17,13 @@ async def fetch(session, url):
 
 
 class jindex(Website):
+    steder = ["Copenhagen", "Glostrup", "København", "Aalborg",
+                      "Couldn't find location", "Region Hovedstaden", "Aalborg eller København", "Billund", "Danmark", "Fjernarbejde", "Japan", "Oslo", "Malmö", "Stockholm", "Søborg", ]
+    areas = ["python", "python3", "C#", "dotnet", "dotnet core", ".net", "asp.net", "mysql",
+                     "sql", "devops", "jenkins", "git", "gitlab", "linux", "windows", "html", "css", 
+                     "dapper", "entity", "django", "nodejs", "docker", "rest", "tensorflow", "tkinker", 
+                     "vmware", "tfs", "uml", "systemudvikling", "microservices", "integration", "test", 
+                     "functional test", "funktionelle test", "tests"]
 
     async def fetch_all_urls(self, weburls):
         tasks = []
@@ -115,17 +122,20 @@ class jindex(Website):
             if len(job_page.find("p").contents) > 2:
                 location = str(job_page.find("p").contents[2]).split(' ')[-1]
             else:
-                location = "Couldn't find location"
+                location = "N/A"
+            
+            if descriptionstring:
+                descriptionstring.replace("|","")
+                descriptionstring.replace("\n","")
+                descriptionstring.strip()
+
+            if title:
+                title.replace("|","")
+                title.replace("\n","")
+                title.strip()
 
             newjob = Job(title=title, location=location, company=company, joblink=joblink, description=descriptionstring, publishdate=publishdate, urlname="jobindex")
 
-            steder = ["Copenhagen", "Glostrup", "København", "Aalborg",
-                      "Couldn't find location", "Region Hovedstaden", "Aalborg eller København"]
-            areas = ["python", "python3", "C#", "dotnet", "dotnet core", ".net", "asp.net", "mysql",
-                     "sql", "devops", "jenkins", "git", "gitlab", "linux", "windows", "html", "css", 
-                     "dapper", "entity", "django", "nodejs", "docker", "rest", "tensorflow", "tkinker", 
-                     "vmware", "tfs", "uml", "systemudvikling", "microservices", "integration", "test", 
-                     "functional test", "funktionelle test", "tests"]
-            if re.compile('|'.join(steder), re.IGNORECASE).search(location) and re.compile('|'.join(areas), re.IGNORECASE).search(descriptionstring):
+            if re.compile('|'.join(self.steder), re.IGNORECASE).search(location) and re.compile('|'.join(self.areas), re.IGNORECASE).search(descriptionstring):
                 self.jobs.append(newjob)
 

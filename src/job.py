@@ -13,10 +13,10 @@ class Job:
             "{0:20}".format(self.title) + " | " + "Company: " + self.company + " | " + "Location: " + self.location)
 
     def __eq__(self, other):
-        return self.description == other.description
+        return self.title == other.title
 
     def __hash__(self):
-        return hash(('description', self.description))
+        return hash(('title', self.title))
 
     def as_dict(self):
         return {'title': self.title, 
