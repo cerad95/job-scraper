@@ -17,14 +17,6 @@ async def fetch(session, url):
 
 
 class jindex(Website):
-    steder = ["Copenhagen", "Glostrup", "København", "Aalborg",
-                      "Couldn't find location", "Region Hovedstaden", "Aalborg eller København", "Billund", "Danmark", "Fjernarbejde", "Japan", "Oslo", "Malmö", "Stockholm", "Søborg", ]
-    areas = ["python", "python3", "C#", "dotnet", "dotnet core", ".net", "asp.net", "mysql",
-                     "sql", "devops", "jenkins", "git", "gitlab", "linux", "windows", "html", "css", 
-                     "dapper", "entity", "django", "nodejs", "docker", "rest", "tensorflow", "tkinker", 
-                     "vmware", "tfs", "uml", "systemudvikling", "microservices", "integration", "test", 
-                     "functional test", "funktionelle test", "tests"]
-
     async def fetch_all_urls(self, weburls):
         tasks = []
 
@@ -84,10 +76,8 @@ class jindex(Website):
             title = str(title_div.contents[0])
             publishdate = datetime.strptime(
                 str(paidjob.find("li", {'class': ['toolbar-pubdate']}).contents[1].attrs['datetime']), '%Y-%m-%d')
-            joblink = str(paidjob.find(
-                "b").parent.attrs['href']).replace("'", "")
-            paidjob.find(
-                "div", {'class': ['jix_toolbar', 'jix_appetizer_toolbar']}).decompose()
+            joblink = str(paidjob.find("b").parent.attrs['href']).replace("'", "")
+            paidjob.find("div", {'class': ['jix_toolbar', 'jix_appetizer_toolbar']}).decompose()
             paragraphs = paidjob.find_all(["p", 'li'], recursive=True)
 
             for paragraph in paragraphs:
@@ -98,8 +88,6 @@ class jindex(Website):
                 company = paragraphs[0].contents[1].contents[0].contents[0]
             else:
                 company = paragraphs[1].contents[1].contents[0].contents[0]
-
-            company = str(company).replace("|", "/")
 
             description = []
             for paragraph in paragraphs:
@@ -116,25 +104,16 @@ class jindex(Website):
                 if paragraph == " ":
                     del paragraph
                 else:
-                    descriptionstring += paragraph.replace(
-                        "<b>", "").replace("</b>", "")
+                    descriptionstring += self.clean_string(paragraph)
 
             if len(job_page.find("p").contents) > 2:
                 location = str(job_page.find("p").contents[2]).split(' ')[-1]
             else:
                 location = "N/A"
-            
-            if descriptionstring:
-                descriptionstring.replace("|","")
-                descriptionstring.replace("\n","")
-                descriptionstring.strip()
-
-            if title:
-                title.replace("|","")
-                title.replace("\n","")
-                title.strip()
-
+        
             newjob = Job(title=title, location=location, company=company, joblink=joblink, description=descriptionstring, publishdate=publishdate, urlname="jobindex")
+
+            self.clean_object(newjob)
 
             if re.compile('|'.join(self.steder), re.IGNORECASE).search(location) and re.compile('|'.join(self.areas), re.IGNORECASE).search(descriptionstring):
                 self.jobs.append(newjob)

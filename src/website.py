@@ -16,6 +16,7 @@ class Website:
                      "dapper", "entity", "django", "nodejs", "docker", "rest", "tensorflow", "tkinker", 
                      "vmware", "tfs", "uml", "systemudvikling", "microservices", "integration", "test", 
                      "functional test", "funktionelle test", "tests"]
+        self.areas2 = ["C#", "Python", ".NET", "ASP"]
 
     def get_max_page(self):
         pass
@@ -23,4 +24,11 @@ class Website:
     def generate_urls_for_pages(self):
         pass
 
+    def clean_string(self, sentence):
+        return sentence.strip().replace("\n","").replace("|","/").replace('\t', '').replace("<b>", "").replace("</b>", "")
     
+    def clean_object(self, object):
+        for attr, value in object.__dict__.items():
+            print(attr, value)
+            if type(value) == str:
+                value = self.clean_string(value)

@@ -99,6 +99,8 @@ class graduateland(Website):
 
             newjob = Job(title=title, location=location, company=company, joblink=joblink, description=descriptionstring, publishdate=publishdate, urlname="Graduateland")
             
+            self.clean_object(newjob)
+
             if re.compile('|'.join(self.steder), re.IGNORECASE).search(location):
                 self.jobs.append(newjob)
         
